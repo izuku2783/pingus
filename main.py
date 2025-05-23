@@ -33,7 +33,7 @@ user_reminders: Dict[int, List[Dict]] = {}
 sniped_messages: Dict[int, Dict] = {}
 
 # Server-specific hydration channel storage (guild_id: channel_id)
-hydration_channels: Dict[int, int] = {}
+hydration_channels: Dict[int, Dict[str, int]] = {}
 SAVE_PATH = "hydration_channels.json"
 
 # Load hydration channels from file
@@ -134,7 +134,7 @@ async def reminders(interaction: discord.Interaction):
     reminders = user_reminders.get(interaction.user.id, [])
 
     if not reminders:
-        await interaction.response.send_message("You have no active reminders.")
+        await interaction.response.send_message("no reminders")
         return
 
     embed = discord.Embed(title="⏳ Your Reminders", color=discord.Color.pink())
@@ -161,7 +161,7 @@ async def define(interaction: discord.Interaction, word: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status != 200:
-                await interaction.followup.send(f"❌ Could not find the word **{word}**.")
+                await interaction.followup.send(f"❌ NO WORD LOL **{word}**.")
                 return
 
             data = await response.json()
@@ -185,12 +185,11 @@ async def define(interaction: discord.Interaction, word: str):
             part_of_speech = meaning["partOfSpeech"]
             for definition_data in meaning["definitions"]:
                 definition = definition_data["definition"]
-                example = definition_data["example"]
                 synonym = definition_data.get("synonyms")
 
                 embed.add_field(
                     name=f"({part_of_speech}) {definition}",
-                    value=f"_Synonym:_ {synonym} \n_Example:_ {example}",
+                    value=f"_Synonym:_ {synonym}",
                     inline=False
                 )
                 count += 1
@@ -203,7 +202,7 @@ async def define(interaction: discord.Interaction, word: str):
 
     except Exception as e:
         print(f"Error parsing dictionary API response: {e}")
-        await interaction.followup.send("⚠️ Something went wrong while parsing the definition.")
+        await interaction.followup.send("⚠️ EHHHH")
 
 
 
@@ -243,26 +242,36 @@ async def snipe(interaction: discord.Interaction):
 
 
 # Water reminder loop every 60 minutes
-@bot.tree.command(name="sethydrationchannel", description="Set the channel to receive water reminders.")
-@app_commands.describe(channel="The channel where water reminders should be sent.")
-async def sethydrationchannel(interaction: discord.Interaction, channel: discord.TextChannel):
+@bot.tree.command(name="sethydrationchannel", description="Set the hydration reminder channel and ping role.")
+@app_commands.describe(channel="Channel to send reminders", role="Role to ping")
+async def sethydrationchannel(interaction: discord.Interaction, channel: discord.TextChannel, role: discord.Role):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("❌ Only administrators can set the hydration channel.", ephemeral=True)
         return
 
     guild_id = interaction.guild.id
-    hydration_channels[guild_id] = channel.id
-    await interaction.response.send_message(f"✅ Water reminders will now be sent to {channel.mention} every 60 minutes.")
+    hydration_channels[guild_id] = {
+        "channel": channel.id,
+        "role": role.id
+    }
+
+    await interaction.response.send_message(
+        f"✅ water reminder set :3 see you in an hour!"
+    )
+
 
 @tasks.loop(minutes=60)
 async def water_reminder():
-    for guild_id, channel_id in hydration_channels.items():
-        channel = bot.get_channel(channel_id)
-        if channel:
+    for guild_id, data in hydration_channels.items():
+        channel = bot.get_channel(data["channel"])
+        role = discord.utils.get(channel.guild.roles, id=data["role"]) if channel else None
+
+        if channel and role:
             try:
-                await channel.send("💧 dink water @ladies :3")
+                await channel.send(f"💧 dink water {role.mention} :3")
             except Exception as e:
                 print(f"Failed to send reminder to {channel.name} in {guild_id}: {e}")
+
 
 
 # Sync commands and start loop
