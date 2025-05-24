@@ -10,6 +10,8 @@ import uuid
 import aiohttp
 import webserver
 import json
+from datetime import datetime, timedelta
+
 
 # Load environment variables
 load_dotenv()
@@ -47,6 +49,10 @@ def load_channels():
 def save_channels():
     with open(SAVE_PATH, "w") as f:
         json.dump(hydration_channels, f)
+
+
+# Track paused hydration reminders: guild_id -> resume_time (datetime)
+paused_guilds: Dict[int, datetime] = {}
 
 # View for canceling a single reminder (used when reminder triggers)
 class ReminderView(discord.ui.View):
@@ -92,11 +98,12 @@ class RemindersListView(discord.ui.View):
             self.add_item(CancelButton(user_id, reminder["id"], f"Cancel: {reminder['task']}"))
 
 
-@bot.tree.command(name="remind", description="Set a reminder with a task and time (in minutes).")
-@app_commands.describe(task="What should I remind you about?", minutes="When to remind you (in minutes)")
-async def remind(interaction: discord.Interaction, task: str, minutes: int):
-    if minutes <= 0:
-        await interaction.response.send_message("Minutes must be greater than 0.")
+@bot.tree.command(name="remind", description="Set a reminder with a task and time.")
+@app_commands.describe(task="What should I remind you about?", hours="Hours until reminder", minutes="Minutes until reminder")
+async def remind(interaction: discord.Interaction, task: str, hours: int = 0, minutes: int = 0):
+    total_minutes = hours * 60 + minutes
+    if total_minutes <= 0:
+        await interaction.response.send_message("⏱️ Please specify a time greater than 0 minutes.", ephemeral=True)
         return
 
     reminder_id = str(uuid.uuid4())
@@ -105,7 +112,7 @@ async def remind(interaction: discord.Interaction, task: str, minutes: int):
     reminder = {
         "id": reminder_id,
         "task": task,
-        "minutes": minutes,
+        "minutes": total_minutes,
         "user": interaction.user,
         "channel": interaction.channel,
     }
@@ -113,11 +120,11 @@ async def remind(interaction: discord.Interaction, task: str, minutes: int):
     user_reminders.setdefault(user_id, []).append(reminder)
 
     await interaction.response.send_message(
-        f"✅ Reminder set for **{task}** in {minutes} minute(s).",
+        f"✅ Reminder set for **{task}** in {hours} hour(s) and {minutes} minute(s).",
     )
 
     async def send_reminder():
-        await asyncio.sleep(minutes * 60)
+        await asyncio.sleep(total_minutes * 60)
         for r in user_reminders.get(user_id, []):
             if r["id"] == reminder_id:
                 await reminder["channel"].send(
@@ -240,6 +247,26 @@ async def snipe(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed)
 
+# command to pause hydration
+@bot.tree.command(name="pausehydration", description="Pause hydration reminders for a number of hours.")
+@app_commands.describe(hours="How many hours to pause hydration reminders")
+async def pausehydration(interaction: discord.Interaction, hours: int):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ Only administrators can pause the hydration reminder.", ephemeral=True)
+        return
+
+    if hours <= 0:
+        await interaction.response.send_message("⚠️ Please enter a number greater than 0.", ephemeral=True)
+        return
+
+    guild_id = interaction.guild.id
+    resume_time = datetime.utcnow() + timedelta(hours=hours)
+    paused_guilds[guild_id] = resume_time
+
+    await interaction.response.send_message(
+        f"⏸️ no more dink water for {hours} hour(s) :3 They will resume <t:{int(resume_time.timestamp())}:R>."
+    )
+
 
 # Water reminder loop every 60 minutes
 @bot.tree.command(name="sethydrationchannel", description="Set the hydration reminder channel and ping role.")
@@ -263,6 +290,13 @@ async def sethydrationchannel(interaction: discord.Interaction, channel: discord
 @tasks.loop(minutes=60)
 async def water_reminder():
     for guild_id, data in hydration_channels.items():
+        # Skip if paused
+        if guild_id in paused_guilds:
+            if datetime.utcnow() < paused_guilds[guild_id]:
+                continue
+            else:
+                del paused_guilds[guild_id]  # Resume reminders
+
         channel = bot.get_channel(data["channel"])
         role = discord.utils.get(channel.guild.roles, id=data["role"]) if channel else None
 
@@ -271,7 +305,6 @@ async def water_reminder():
                 await channel.send(f"💧 dink water {role.mention} :3")
             except Exception as e:
                 print(f"Failed to send reminder to {channel.name} in {guild_id}: {e}")
-
 
 
 # Sync commands and start loop
