@@ -1,7 +1,3 @@
-Absolutely! Here's a **professional and informative `README.md`** you can use for your Discord bot project:
-
----
-
 # 💧 Hydration Reminder & Utility Bot
 
 A multipurpose Discord bot built with `discord.py`, providing:
@@ -15,9 +11,9 @@ Hosted on **Render** with uptime monitoring via **UptimeRobot**.
 
 ---
 
- 🚀 Features
+## 🚀 Features
 
-# 🧠 Reminders
+### 🧠 Reminders
 
 Set personal reminders using slash commands.
 
@@ -25,7 +21,7 @@ Set personal reminders using slash commands.
 /remind task:"Do homework" hours:2 minutes:30
 ```
 
-# 📋 View and Cancel Reminders
+### 📋 View and Cancel Reminders
 
 ```bash
 /reminders
@@ -33,7 +29,7 @@ Set personal reminders using slash commands.
 
 Lists all active reminders with cancel buttons.
 
-# 📚 Dictionary Command
+### 📚 Dictionary Command
 
 Look up definitions for English words using the Free Dictionary API.
 
@@ -41,7 +37,7 @@ Look up definitions for English words using the Free Dictionary API.
 /define word:"ephemeral"
 ```
 
-# 💬 Snipe
+### 💬 Snipe
 
 Retrieve the last deleted message in a channel.
 
@@ -49,7 +45,7 @@ Retrieve the last deleted message in a channel.
 /snipe
 ```
 
-# 💧 Water Reminder System
+### 💧 Water Reminder System
 
 Send automatic hydration reminders every 60 minutes in a **server-specific channel**, tagging a specific **role**.
 
@@ -60,22 +56,22 @@ Commands:
 
 ---
 
- 🛠️ Installation (for local development)
+## 🛠️ Installation (for local development)
 
-# 1. Clone the Repository
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/your-bot.git
-cd your-bot
+git clone https://github.com/izuku2783/pingus.git
+cd pingus
 ```
 
-# 2. Install Requirements
+### 2. Install Requirements
 
 ```bash
 pip install -r requirements.txt
 ```
 
-# 3. Set Environment Variables
+### 3. Set Environment Variables
 
 Create a `.env` file:
 
@@ -85,7 +81,7 @@ DISCORD_TOKEN=your_discord_token_here
 
 ---
 
- 🌐 Hosting on Render
+## 🌐 Hosting on Render
 
 1. Push your project to GitHub
 2. Go to [Render.com](https://render.com/)
@@ -98,11 +94,11 @@ DISCORD_TOKEN=your_discord_token_here
 
    * `DISCORD_TOKEN`: Your bot's token
 
-# Keep-Alive
+### Keep-Alive
 
 Use a lightweight Flask server (`webserver.py`) to prevent timeouts.
 
-python
+```python
 # webserver.py
 from flask import Flask
 from threading import Thread
@@ -114,13 +110,13 @@ def home():
 
 def keep_alive():
     Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
-
+```
 
 This is pinged by UptimeRobot to prevent Render from sleeping.
 
 ---
 
- 🟢 Keeping the Bot Alive
+## 🟢 Keeping the Bot Alive
 
 Use [UptimeRobot](https://uptimerobot.com/) to ping the Render URL every 5 minutes.
 
@@ -131,7 +127,7 @@ Use [UptimeRobot](https://uptimerobot.com/) to ping the Render URL every 5 minut
 
 ---
 
-🔐 Permissions
+## 🔐 Permissions
 
 This bot needs the following permissions:
 
@@ -142,6 +138,6 @@ This bot needs the following permissions:
 
 ---
 
- 📄 License
+## 📄 License
 
 MIT License – feel free to use and modify.
