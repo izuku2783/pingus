@@ -306,6 +306,21 @@ async def water_reminder():
             except Exception as e:
                 print(f"Failed to send reminder to {channel.name} in {guild_id}: {e}")
 
+#replying
+@bot.event
+async def on_message(message: discord.Message):
+    # Ignore messages from bots (including itself)
+    if message.author.bot:
+        return
+
+    # Respond when bot is mentioned
+    if bot.user in message.mentions:
+        await message.channel.send(f"Shut the fuck up! Shut the fuck up! Shut up. What are you doing? What the fuck are you doing? I have to go right now. I’m getting calls. I have to catch a flight. I’m on a tour. I’m tryna be fucking nice. You see I’m tryna be nice right now, right? You’re forcing me to be bad but I’m actually doing a good thing. All right? So, just chill the fuck out and- I gotta go.")
+
+    # Don't forget to process other commands
+    await bot.process_commands(message)
+
+
 
 # Sync commands and start loop
 @bot.event
